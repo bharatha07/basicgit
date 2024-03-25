@@ -1,0 +1,47 @@
+@IsTest
+public class AccountTeamBatchTest {
+    
+    private static final String CROSSSELLAE_USERNAME = 'csae.user@test.inv';
+    private static final String ISR_USERNAME = 'primaryISR.user@test.inv';
+    private static final List<String> USERNAME_LIST = new List<String>{CROSSSELLAE_USERNAME, ISR_USERNAME};
+    
+    @TestSetup
+    static void testSetup(){
+
+        Account a = new Account(Name = 'Default Team Test');
+        Insert a;
+        
+    }
+    
+    @IsTest
+    static void Test01(){
+        
+        Account a = [Select Id, OwnerId from Account where Name = 'Default Team Test' limit 1];
+        
+        
+        UserAccountTeamMember uatm1 = [Select Id,ownerId,UserId,TEAMMEMBERROLE from UserAccountTeamMember where TEAMMEMBERROLE = 'Cross-Sell AE' limit 1];
+        UserAccountTeamMember uatm2 = [Select Id,ownerId,UserId,TEAMMEMBERROLE from UserAccountTeamMember where TEAMMEMBERROLE = 'Inside Sales Rep (Primary)' and ownerId = : uatm1.ownerId limit 1];
+        //Test.setCreatedDate(uatm1.Id, System.now());
+        //Test.setCreatedDate(uatm2.Id, System.now());
+        a.ownerId = uatm1.ownerId;
+        update a;
+        AccountTeamMember atm1 = new AccountTeamMember(UserId = uatm1.UserId,TeamMemberRole = uatm1.TeamMemberRole, accountId = a.Id);
+        Insert atm1;
+        AccountTeamMember atm2 = new AccountTeamMember(UserId = uatm2.UserId,TeamMemberRole = uatm2.TeamMemberRole, accountId = a.Id);
+        Insert atm2;
+        a.Inside_Sales_Rep_Primary__c = null;
+        a.Cross_Sell_AE__c = null;
+        update a;
+                
+        System.debug('ATM1 : '+ a.ownerId);
+        System.debug('ATM1 : '+ uatm1);
+        
+        Test.startTest();
+        
+        AccountTeamBatch batchTest = new AccountTeamBatch();
+        Database.executeBatch(batchTest);
+        
+        Test.stopTest();
+    }
+
+}
